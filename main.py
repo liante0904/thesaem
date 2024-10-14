@@ -362,7 +362,7 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
         
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=True)
     context = browser.new_context(locale="ko-KR")
     page = context.new_page()
 
