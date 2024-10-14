@@ -6,12 +6,9 @@ from pathlib import Path
 from datetime import datetime
 from playwright.sync_api import Playwright, sync_playwright, expect
 from openpyxl.styles import Border, Side, Alignment
-import os
 from dotenv import load_dotenv
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import gmail
 
 load_dotenv()
 
@@ -170,6 +167,7 @@ def save_csv_as_excel(download_path, period):
 def make_excel_for_performance_ad_campaign_product_efficiency(page):
     """성과형 광고 캠페인 상품 효율 리포트 다운로드 및 엑셀로 변환하는 함수"""
     page.get_by_role("link", name="광고 홈").click()
+    page.get_by_test_id("adAccountDashboardTableContainer").get_by_role("combobox").select_option("50")
     page.get_by_test_id("homeDateRangePickerReference").click()
     page.get_by_test_id("thisMonth").click()
     page.get_by_test_id("homeDateRangePickerDialogApply").click()
@@ -211,11 +209,13 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
 
     # 테이블 출력
     print(df)
-
+    
+    state = '종료'
+    
     # 상태가 '활성'인 캠페인의 캠페인명만 필터링하여 리스트로 변환
-    active_campaign_names = df[df['상태'] == '활성']['캠페인'].tolist()
+    active_campaign_names = df[df['상태'] == state]['캠페인'].tolist()
     print('#' * 50)
-    print("'활성' 상태인 캠페인")
+    print(f"{state} 상태인 캠페인")
     print(active_campaign_names)
     print('#' * 50)
 
@@ -225,7 +225,7 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
         # 캠페인 요소를 찾기 위해 광고홈 이동
         print('캠페인 요소를 찾기 위해 광고홈 이동')
         page.get_by_role("link", name="광고 홈").click()
-        
+        page.get_by_test_id("adAccountDashboardTableContainer").get_by_role("combobox").select_option("50")
         time.sleep(1)
         # 텍스트가 캠페인 이름인 div 요소를 클릭
         # 클래스와 텍스트를 가진 div 요소를 클릭
@@ -242,6 +242,7 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
 
         print(f"캠페인[{campaign_name}] 다운로드한 csv 파일 경로: {download_path}")
         save_csv_as_excel(download_path, campaign_name)
+        
 
 def generate_naver_keyword_excel(page):
     page.goto("https://www.ma-pia.net/keyword/keyword.php")
@@ -339,33 +340,31 @@ def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
         print(f"디렉토리 '{directory}'가 생성되었습니다.")
-
-def send_email(sender_email, sender_password, receiver_email, subject, body):
-    # MIME 객체 생성
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    msg['Subject'] = subject
-
-    # 이메일 본문 추가
-    msg.attach(MIMEText(body, 'plain'))
-
-    # Gmail SMTP 서버에 연결하여 이메일 발송
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()  # TLS 사용 시작
-            server.login(sender_email, sender_password)  # 로그인
-            server.sendmail(sender_email, receiver_email, msg.as_string())  # 이메일 보내기
-            print("이메일이 성공적으로 전송되었습니다.")
-    except Exception as e:
-        print(f"이메일 전송 중 오류 발생: {e}")
-
+        
         
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(locale="ko-KR")
     page = context.new_page()
 
+    # 다운로드 및 엑셀 폴더 경로
+    downloads_folder = os.path.join(PROJECT_PATH, "downloads")
+
+    # 엑셀 폴더 확인 및 생성
+    ensure_directory_exists(downloads_folder)
+    
+    # 엑셀 및 엑셀 폴더 경로
+    excel_folder = os.path.join(PROJECT_PATH, "excel")
+
+    # 전송 폴더 확인 및 생성
+    ensure_directory_exists(excel_folder)
+    
+    # 전송 및 엑셀 폴더 경로
+    send_folder = os.path.join(PROJECT_PATH, "send")
+
+    # 다운로드 폴더 확인 및 생성
+    ensure_directory_exists(send_folder)
+    
     # 로그인
     cjoy_login(page)
 
@@ -378,16 +377,18 @@ def run(playwright: Playwright) -> None:
     save_csv_as_excel(last_month_download_path, "lastMonth")
 
 
-    # 성과형 광고 캠페인 별 제품 효율 (당월)
+    # # 성과형 광고 캠페인 별 제품 효율 (당월)
     make_excel_for_performance_ad_campaign_product_efficiency(page)
 
     # 네이버 키워드 광고 엑셀(마피아닷컴)
     generate_naver_keyword_excel(page)
-
+    
     # ---------------------
     context.close()
     browser.close()
 
+    # 이메일 전송
+    gmail.main()
 
 with sync_playwright() as playwright:
     run(playwright)

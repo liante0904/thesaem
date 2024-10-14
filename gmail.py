@@ -101,8 +101,7 @@ def send_email(attachment_paths=None):
         print(f"이메일 전송 중 오류 발생: {e}")
         return False  # 오류 발생 시 False 반환
 
-# 사용 예시
-if __name__ == "__main__":
+def main():
     directory = os.path.join(PROJECT_PATH, "excel")
     
     result = ''
@@ -123,9 +122,16 @@ if __name__ == "__main__":
     
     # 이메일 보내기
     if attachment_paths:
+        print('전송 대기 파일.')
+        print(attachment_paths)
+        print('='*50)
         result = send_email(attachment_paths)
+    else:
+        print('전송 대기 파일이 없습니다.')
 
     if result:
+        print('='*50)
+        print('전송 완료 폴더로 이동 합니다.')
         # 기준일자 폴더 이름 생성
         date_folder_name = datetime.now().strftime('%Y%m%d')
         date_folder_path = os.path.join(send_directory, date_folder_name)
@@ -141,3 +147,7 @@ if __name__ == "__main__":
             destination = os.path.join(date_folder_path, file_name)
             shutil.move(file_path, destination)  # 파일 이동
             print(f"{file_name}이(가) {date_folder_path}로 이동되었습니다.")    
+
+# 사용 예시
+if __name__ == "__main__":
+    main()

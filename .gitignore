@@ -163,4 +163,5 @@ cython_debug/
 
 excel/*
 downloads/*
-upload/*
+send/*
+.python-version
