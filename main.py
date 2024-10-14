@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 import pandas as pd
@@ -340,9 +341,43 @@ def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
         print(f"디렉토리 '{directory}'가 생성되었습니다.")
+
+def get_files_from_directory(directory, extension=None):
+    """
+    특정 디렉토리에서 모든 파일을 가져오거나 특정 확장자의 파일만 가져옴.
+    파일이 없는 경우 빈 리스트를 반환함.
+    
+    :param directory: 검색할 디렉토리 경로
+    :param extension: 특정 파일 확장자 (예: '.txt'). None일 경우 모든 파일을 반환.
+    :return: 해당 디렉토리의 파일 경로 리스트. 파일이 없으면 빈 리스트.
+    """
+    files = []
+    
+    # 디렉토리 내 파일 목록 확인
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
         
+        # 파일이면서 확장자가 조건에 맞는 경우 리스트에 추가
+        if os.path.isfile(file_path) and (extension is None or file.endswith(extension)):
+            files.append(file_path)
+    
+    # 파일이 없는 경우 빈 리스트 반환
+    return files  
         
 def run(playwright: Playwright) -> None:
+    
+    send_directory = os.path.join(PROJECT_PATH, "send")
+    date_folder_name = datetime.now().strftime('%Y%m%d')
+    send_date_folder_path = os.path.join(send_directory, date_folder_name)
+    # 기준일자 폴더가 없으면 생성
+    if not os.path.exists(send_date_folder_path):
+        os.makedirs(send_date_folder_path)
+        print(f"{send_date_folder_path} 폴더가 생성되었습니다.")
+    
+    send_files = get_files_from_directory(send_date_folder_path, extension=".xlsx")
+    if send_files:
+        print(f'{datetime.now().strftime('%Y%m%d')} 이미 이메일이 발송되어 종료합니다.')
+        sys.exit(0)
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(locale="ko-KR")
     page = context.new_page()
@@ -364,6 +399,7 @@ def run(playwright: Playwright) -> None:
 
     # 다운로드 폴더 확인 및 생성
     ensure_directory_exists(send_folder)
+    
     
     # 로그인
     cjoy_login(page)
