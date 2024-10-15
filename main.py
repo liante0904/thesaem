@@ -30,6 +30,8 @@ def cjoy_login(page):
 
 def download_campaign_report(page, period):
     """캠페인 리포트 다운로드 함수 (period: 'thisMonth' 또는 'lastMonth')"""
+    print(f"*************캠페인 리포트 다운로드 ({period})*************")
+    
     page.get_by_test_id("homeDateRangePickerReference").click()
     
     if period == "thisMonth":
@@ -167,6 +169,9 @@ def save_csv_as_excel(download_path, period):
 
 def make_excel_for_performance_ad_campaign_product_efficiency(page):
     """성과형 광고 캠페인 상품 효율 리포트 다운로드 및 엑셀로 변환하는 함수"""
+    
+    print("*************성과형 광고 캠페인 별 제품 효율 (당월)*************")
+    
     page.get_by_role("link", name="광고 홈").click()
     page.get_by_test_id("adAccountDashboardTableContainer").get_by_role("combobox").select_option("50")
     page.get_by_test_id("homeDateRangePickerReference").click()
@@ -246,6 +251,8 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
         
 
 def generate_naver_keyword_excel(page):
+    print("*************네이버 키워드 광고 엑셀(마피아닷컴)*************")
+    
     page.goto("https://www.ma-pia.net/keyword/keyword.php")
     page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").click()
     page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").fill("롬앤\n에뛰드\n클리오\n헤라\n페리페라\n에스쁘아\n투쿨포스쿨\n3CE\n릴리바이레드\n바닐라코\n퓌\n어뮤즈\n힌스\n하트퍼센트\n무지개맨션\n라카\n파넬\nVDL\n노베브\n삐아\n이니스프리\n컬러그램\n티핏\n루나\n루나컨실러\n루나컨실러팔레트\n루나롱래스팅팁컨실러\n웨이크메이크\n웨이크메이크컨실러\n데이지크\n데이지크컨실러\n데이지크컨실러팔레트\n정샘물\n정샘물컨실러\n정샘물컨실러팔레트\n티핏컨실러\n삐아컨실러\n글로우컨실러\n글로우낫드라이컨실러\n디어에이컨실러\n클리오컨실러\n바비브라운컨실러\n마루빌츠컨실러\n헤라컨실러\n더샘\n더샘컨실러\n더샘\n더샘컨실러\n더샘컨실러펜슬\n더샘팟컨실러\n더샘커버퍼펙션컨실러\n더샘커버퍼펙션팁컨실러\n더샘커버퍼펙션트리플팟컨실러\n더샘커버퍼펙션컨실러펜슬\n더샘커버퍼펙션컨실러쿠션\n더샘트리플팟컨실러\n더샘컨실러팔레트\n더샘파운데이션\n더샘컨실러쿠션\n더샘팁컨실러\n더샘립펜슬\n더샘쿠션\n더샘블러셔\n더샘젤리블러셔\n더샘코렉트베이지\n더샘코렉트업베이지\n더샘선크림\n더샘하이라이터\n더샘입덕주의화이트\n더샘클렌징워터\n더샘세일\n더샘파운데이션밤\n더샘섀도우\n더샘멜팅밤\n더샘프라이머립밤\n더샘입주화\n올리브영더샘\n더샘올리브영\n올리브영더샘컨실러\n올리브영다크서클컨실러\n더샘컨실러팟\n더샘다크서클컨실러\n더샘브라이트너\n더샘피치베이지\n더샘컨실러1.5\n더샘컨실러피치베이지\n더샘컨투어베이지\n더샘펜슬컨실러\n더샘트리플컨실러\n더샘마스크팩\n")
@@ -435,8 +442,7 @@ def run(playwright: Playwright) -> None:
     last_month_download_path = download_campaign_report(page, "lastMonth")
     save_csv_as_excel(last_month_download_path, "lastMonth")
 
-
-    # # 성과형 광고 캠페인 별 제품 효율 (당월)
+    # 성과형 광고 캠페인 별 제품 효율 (당월)
     make_excel_for_performance_ad_campaign_product_efficiency(page)
 
     # 네이버 키워드 광고 엑셀(마피아닷컴)
@@ -446,6 +452,7 @@ def run(playwright: Playwright) -> None:
     context.close()
     browser.close()
 
+    print("************* 이메일 발송 *************")
     # 이메일 전송
     gmail.main()
 
