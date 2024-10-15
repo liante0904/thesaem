@@ -381,9 +381,9 @@ def run(playwright: Playwright) -> None:
         
     env = os.getenv('ENV')
     print(env)
-    headless = True
+    headless = False
     if env == 'production':
-        headless = False
+        headless = True
 
 
     browser = playwright.chromium.launch(headless=headless)
