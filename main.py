@@ -378,7 +378,15 @@ def run(playwright: Playwright) -> None:
     if send_files:
         print(f"{datetime.now().strftime('%Y%m%d')} 이미 이메일이 발송되어 종료합니다.")
         sys.exit(0)
-    browser = playwright.chromium.launch(headless=False)
+        
+    env = os.getenv('ENV')
+    print(env)
+    headless = True
+    if env == 'production':
+        headless = False
+
+
+    browser = playwright.chromium.launch(headless=headless)
     context = browser.new_context(locale="ko-KR")
     page = context.new_page()
 
