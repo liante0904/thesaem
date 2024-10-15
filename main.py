@@ -211,7 +211,7 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
     # 테이블 출력
     print(df)
     
-    state = '종료'
+    state = '활성'
     
     # 상태가 '활성'인 캠페인의 캠페인명만 필터링하여 리스트로 변환
     active_campaign_names = df[df['상태'] == state]['캠페인'].tolist()
@@ -376,7 +376,7 @@ def run(playwright: Playwright) -> None:
     
     send_files = get_files_from_directory(send_date_folder_path, extension=".xlsx")
     if send_files:
-        print(f'{datetime.now().strftime('%Y%m%d')} 이미 이메일이 발송되어 종료합니다.')
+        print(f"{datetime.now().strftime('%Y%m%d')} 이미 이메일이 발송되어 종료합니다.")
         sys.exit(0)
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(locale="ko-KR")
