@@ -364,42 +364,65 @@ def get_files_from_directory(directory, extension=None):
     # 파일이 없는 경우 빈 리스트 반환
     return files  
         
-def run(playwright: Playwright) -> None:
+def setup_directories(project_path):
+    """
+    필요한 폴더들을 생성하고, 기준일자 폴더 내 파일을 확인합니다.
+    기준일자 폴더에 파일이 있으면 프로그램을 종료합니다.
     
-    send_directory = os.path.join(PROJECT_PATH, "send")
+    :param project_path: 프로젝트 경로
+    """
+    # 전송 폴더 및 기준일자 폴더 생성 및 파일 확인
+    send_directory = os.path.join(project_path, "send")
     date_folder_name = datetime.now().strftime('%Y%m%d')
     send_date_folder_path = os.path.join(send_directory, date_folder_name)
-    # 기준일자 폴더가 없으면 생성
-    if not os.path.exists(send_date_folder_path):
-        os.makedirs(send_date_folder_path)
-        print(f"{send_date_folder_path} 폴더가 생성되었습니다.")
-    
+
+    # 기준일자 폴더 확인 및 생성
+    ensure_directory_exists(send_date_folder_path)
+
+    # 기준일자 폴더에 이미 전송된 파일이 있는지 확인
     send_files = get_files_from_directory(send_date_folder_path, extension=".xlsx")
     if send_files:
         print(f"{datetime.now().strftime('%Y%m%d')} 이미 이메일이 발송되어 종료합니다.")
         sys.exit(0)
-    browser = playwright.chromium.launch(headless=False)
+
+    # 다운로드, 엑셀 폴더 경로 생성
+    downloads_folder = os.path.join(project_path, "downloads")
+    excel_folder = os.path.join(project_path, "excel")
+    send_folder = os.path.join(project_path, "send")
+
+    # 폴더들 확인 및 생성
+    ensure_directory_exists(downloads_folder)
+    ensure_directory_exists(excel_folder)
+    ensure_directory_exists(send_folder)
+
+def setup_browser(playwright: Playwright):
+    """
+    Playwright 브라우저 설정을 처리합니다. 환경 변수에 따라 headless 모드를 설정합니다.
+    
+    :param playwright: Playwright 인스턴스
+    :return: 생성된 페이지 객체
+    """
+    env = os.getenv('ENV')
+    print(f"현재 환경: {env}")
+    
+    headless = False
+    if env == 'production':
+        headless = True
+
+    browser = playwright.chromium.launch(headless=headless)
     context = browser.new_context(locale="ko-KR")
     page = context.new_page()
 
-    # 다운로드 및 엑셀 폴더 경로
-    downloads_folder = os.path.join(PROJECT_PATH, "downloads")
+    return browser, context, page
 
-    # 엑셀 폴더 확인 및 생성
-    ensure_directory_exists(downloads_folder)
-    
-    # 엑셀 및 엑셀 폴더 경로
-    excel_folder = os.path.join(PROJECT_PATH, "excel")
 
-    # 전송 폴더 확인 및 생성
-    ensure_directory_exists(excel_folder)
+def run(playwright: Playwright) -> None:
     
-    # 전송 및 엑셀 폴더 경로
-    send_folder = os.path.join(PROJECT_PATH, "send")
-
-    # 다운로드 폴더 확인 및 생성
-    ensure_directory_exists(send_folder)
+    # 폴더 생성 및 파일 확인
+    setup_directories(PROJECT_PATH)    
     
+    # 브라우저 설정 및 실행
+    browser, context, page = setup_browser(playwright)
     
     # 로그인
     cjoy_login(page)
