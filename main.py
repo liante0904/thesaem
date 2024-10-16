@@ -269,16 +269,13 @@ def generate_naver_keyword_excel(page):
     input_field.click()
     print("입력 필드를 클릭했습니다.")
     
-    
     # 조회 버튼 클릭
     page.get_by_role("button", name="조회하기").click()
     print("조회하기 버튼을 클릭했습니다.")
 
-    print("데이터 생성까지 20초 대기중")
- 
-    # 초기 20초 대기
-    time.sleep(20)
-
+    # 로딩 완료까지 대기
+    wait_for_loading_to_complete(page)
+    
     # 최대 10번 반복
     max_attempts = 10
     attempts = 0
@@ -289,29 +286,31 @@ def generate_naver_keyword_excel(page):
     # 다운로드 폴더 확인 및 생성
     ensure_directory_exists(downloads_folder)
 
+    attempts = 0
+    max_attempts=30
+    interval=10
     while attempts < max_attempts:
-        count = count_rows_in_table(page)
+        count = count_rows_in_table(page)  # 테이블의 레코드 수를 계산하는 함수
         print(f'Table has {count} rows.')
-        
+
         # 200개가 넘으면 전체 체크 후 파일 다운로드
         if count > 200:
             # 전체 체크 후 파일 다운로드
-            page.get_by_role("row", name="NO").get_by_role("checkbox").check()
-            print("전체 체크 박스를 클릭했습니다.")
+            check_all_rows(page)
 
             # 다운로드 버튼 클릭
             with page.expect_download() as download_info:
-                page.get_by_role("button", name="다운로드").click()
+                download_button = page.locator('xpath=/html/body/div[2]/section[1]/div[4]/div[1]/button[1]')
+                download_button.click()
                 print("다운로드 버튼을 클릭했습니다.")
             download = download_info.value
 
             # 다운로드된 파일 경로
-            downloaded_file_path = download.path()  # 메서드 호출
+            downloaded_file_path = download.path()  # 다운로드된 파일의 경로
             print(f"다운로드된 파일 경로: {downloaded_file_path}")
 
             # 새 파일 이름 생성
             new_file_name = f"더샘_브랜드검색_키워드쿼리_{datetime.now().strftime('%Y%m%d')}.xlsx"
-            downloads_folder = os.path.join(PROJECT_PATH, "downloads")  # 다운로드 폴더 경로
             new_file_path = os.path.join(downloads_folder, new_file_name)
 
             # 파일 이름 변경 및 이동
@@ -330,14 +329,43 @@ def generate_naver_keyword_excel(page):
             print(f"파일이 '{save_directory}'로 복사되었습니다.")
             break  # 다운로드가 완료되면 루프 종료
         
-        # 200개가 안 되면 5초 대기 후 다시 호출
-        print("Not enough rows. Waiting for 5 seconds...")
-        time.sleep(5)
+        # 200개가 안 되면 10초 대기 후 다시 호출
+        print(f"Not enough rows. Waiting for {interval} seconds...")
+        time.sleep(interval)
         attempts += 1
-    
+
+    if attempts == max_attempts:
+        print("최대 대기 시간 5분이 초과되었습니다. 다운로드를 수행할 수 없습니다.")
+
+def wait_for_loading_to_complete(page):
+    # 로딩 표시를 감지할 CSS 선택자 설정
+    loading_element = page.locator('div[style*="display: block"]')
+
+    # 로딩이 시작될 때까지 대기 (display: block)
+    print("로딩 시작을 기다리는 중...")
+    loading_element.wait_for(state="visible", timeout=30000)  # 최대 10초 대기
+    print("로딩 표시가 보였습니다.")
+
+    # 로딩이 끝나서 사라질 때까지 대기 (display: none)
+    loading_element.wait_for(state="hidden", timeout=30000)  # 최대 30초 대기
+    print("로딩이 완료되었습니다.")
+
+
+def check_all_rows(page):
+    # 전체 체크박스를 선택
+    checkbox = page.locator('xpath=/html/body/div[2]/section[1]/div[4]/div[2]/table/thead/tr[1]/th[1]/input')
+    try:
+        checkbox.wait_for(timeout=5000)  # 최대 5초 대기
+        checkbox.check()
+        print("전체 체크 박스를 클릭했습니다.")
+    except TimeoutError:
+        print("체크박스 클릭 실패. 재시도 중...")
+        time.sleep(2)
+        check_all_rows(page)
+
 def count_rows_in_table(page):
     # XPath를 사용하여 tbody의 하위 tr 요소 선택
-    rows = page.locator('//*[@id="mytable2"]/tbody/tr')
+    rows = page.locator('xpath=//*[@id="mytable2"]/tbody/tr')
     
     # tr 요소의 개수 반환
     row_count = rows.count()
