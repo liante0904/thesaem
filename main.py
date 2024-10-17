@@ -1,24 +1,19 @@
 import sys
 import os
 import shutil
-import requests
 import pandas as pd
 import time
 from pathlib import Path
 from datetime import datetime
-from playwright.sync_api import Playwright, sync_playwright
-from openpyxl.styles import Border, Side, Alignment, Font
-from openpyxl.utils import get_column_letter
-from openpyxl import Workbook
-
+from playwright.sync_api import Playwright, sync_playwright, expect
+from openpyxl.styles import Border, Side, Alignment
 from dotenv import load_dotenv
+
 import gmail
 
 load_dotenv()
 
 PROJECT_PATH = os.getenv("PROJECT_PATH")
-
-MAPIA_KEYWORDS_STR = os.getenv("MAPIA_KEYWORDS_STR")
 
 def cjoy_login(page):
     """로그인 함수"""
@@ -121,7 +116,7 @@ def save_csv_as_excel(download_path, period):
         output_filename = f"더샘_성과형광고_{period}_효율_저장_{datetime.now().strftime('%Y%m%d')}.xlsx"
 
 
-    # 저장할 경로 설정
+    # # 저장할 경로 설정
     save_directory = os.path.join(PROJECT_PATH, "excel")
 
     output_path = os.path.join(save_directory, output_filename)
@@ -255,275 +250,126 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
         save_csv_as_excel(download_path, campaign_name)
         
 
-def generate_naver_keyword_excel():
+def generate_naver_keyword_excel(page):
     print("*************네이버 키워드 광고 엑셀(마피아닷컴)*************")
-
-    print(f"****추출 키워드 문자열*****\n{MAPIA_KEYWORDS_STR}")
-
-    # \n와 , 둘 다 처리하도록 ,를 \n로 변환한 뒤 split
-    # 키워드 리스트
-    mapia_splited_keywords = [keyword.strip() for keyword in MAPIA_KEYWORDS_STR.replace(",", "\n").replace("\\n", "\n").split("\n") if keyword.strip()]
-
-    print(f"****변환 키워드 리스트*****\n{mapia_splited_keywords}")
-    print(f"****변환 키워드 건수*****\n{len(mapia_splited_keywords)}")
     
-
-    # 현재 시간을 밀리초로 변환
-    current_time = int(time.time() * 1000)
-
-    # 결과를 저장할 리스트
-    data = {
-        'Keyword': [],
-        'POST_result_1': [],
-        'POST_result_2': [],
-        'POST_result_3': [],
-        'POST_result_4': [],
-        'POST_result_5': [],
-        'POST_result_6': [],
-        'POST_result_7': [],
-        'POST_result_8': [],
-        'GET_shopCategory': [],
-        'GET_monthBlog': [],
-        'GET_blogSaturation': []
-    }
-
-    # 헤더 설정
-    headers = {
-        "referer": "https://www.ma-pia.net/",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-    }
-
-    # POST와 GET 요청을 통해 데이터를 수집
-    for keyword in mapia_splited_keywords:
-        print(f"현재 키워드: {keyword}")
-        
-        # POST 요청
-        post_url = "https://www.ma-pia.net/keyword/keywordQ.php"
-        post_data = {'DataQ': keyword}
-        
-        retry_count = 0
-        max_retries = 10
-        success = False
-
-        while retry_count < max_retries and not success:
-            post_response = requests.post(post_url, data=post_data, headers=headers)
-            
-            if post_response.status_code == 200:
-                if "success :" in post_response.text:
-                    print(f"POST 요청 성공: {keyword}")
-                    post_result = post_response.text.split("success :")[1].split("|||")[0].split("///")
-                    
-                    # POST 결과 추가
-                    data['Keyword'].append(keyword)
-                    data['POST_result_1'].append(post_result[1])
-                    data['POST_result_2'].append(post_result[2])
-                    data['POST_result_3'].append(post_result[3])
-                    data['POST_result_4'].append(post_result[4])
-                    data['POST_result_5'].append(post_result[5])
-                    data['POST_result_6'].append(post_result[6])
-                    data['POST_result_7'].append(post_result[7])
-                    data['POST_result_8'].append(post_result[8])
-                    success = True
-                else:
-                    print(f"POST 응답에 'success :'가 없습니다. 재시도 중... ({retry_count + 1}/{max_retries})")
-            else:
-                print(f"POST 요청 실패: {keyword} (상태 코드: {post_response.status_code})")
-
-            retry_count += 1
-            time.sleep(1)  # 재시도 전에 1초 대기
-
-        if not success:
-            print(f"POST 요청 실패: {keyword} (최대 재시도 횟수 초과)")
-            continue
-
-        # GET 요청
-        get_url = "https://uy3w6h3mzi.execute-api.ap-northeast-2.amazonaws.com/Prod/hello"
-        get_params = {
-            "keyword": keyword,
-            "totalSum": int(post_result[1]) + int(post_result[2]) ,
-            "time": current_time
-        }
-        
-        get_response = requests.get(get_url, params=get_params, headers=headers)
-        
-        if get_response.status_code == 200:
-            print(f"GET 요청 성공: {keyword}")
-            get_data = get_response.json()
-            
-            # GET 결과 추가
-            data['GET_shopCategory'].append(get_data['result']['shopCategory'])
-            data['GET_monthBlog'].append(get_data['result']['monthBlog'])
-            data['GET_blogSaturation'].append(get_data['result']['blogSaturation'])
-        else:
-            print(f"GET 요청 실패: {keyword}")
-            continue
-
-    # DataFrame 생성
-    df = pd.DataFrame(data)
-    print(data)
-
-    # 새로운 엑셀 파일 생성
-
-    # 새로운 엑셀 파일 생성
-    wb = Workbook()
-    ws = wb.active
-
-
-
-
-    # 첫 번째 행에 안내 문구 추가(공백셀)
-    ws.merge_cells('A1:M1')
-    ws['A1'] = ' '
-
-    # 두 번째 행에 컬럼 이름 추가
-    columns = [
-        "키워드", "월간검색수", "", "검색수\n합계", "월간 블로그 발행", "", 
-        "네이버쇼핑\n카테고리", "월평균클릭수", "", "월평균클릭율(%)", "", "경쟁정도", "월평균\n노출광고수"
-    ]
-    ws.append(columns)
-
-    # 셀 병합 처리
-    ws.merge_cells('B2:C2')
-    ws.merge_cells('H2:I2')
-    ws.merge_cells('J2:K2')
-
-    # 추가 병합
-    ws.merge_cells('A2:A3')  # A2:A3 병합
-    ws.merge_cells('D2:D3')  # D2:D3 병합
-    ws.merge_cells('E2:F2')  # E2:F2 병합
-    ws.merge_cells('G2:G3')  # G2:G3 병합
-    ws.merge_cells('L2:L3')  # L2:L3 병합
-    ws.merge_cells('M2:M3')  # M2:M3 병합
-
-    # 각 병합된 셀에 값을 설정
-    ws['A2'] = '키워드'  # A2 병합된 셀 값
-    ws['D2'] = '검색수\n합계'  # D2 병합된 셀 값
-    ws['E2'] = '월간 블로그 발행'  # E2 병합된 셀 값
-    ws['G2'] = '네이버쇼핑\n카테고리'  # G2 병합된 셀 값
-    ws['L2'] = '경쟁정도'  # L2 병합된 셀 값
-    ws['M2'] = '월평균\n노출광고'  # M2 병합된 셀 값
-
-    # 세 번째 행에 서브 컬럼 이름 추가
-    sub_columns = [
-        "", "PC", "모바일", "", "수량", "포화도", "", "PC", "모바일", "PC", "모바일", "", ""
-    ]
-    ws.append(sub_columns)
-
-    # 데이터 추가
-    for i in range(len(data['Keyword'])):
-        row = [
-            data['Keyword'][i],
-            data['POST_result_1'][i],
-            data['POST_result_2'][i],
-            int(data['POST_result_1'][i])+int(data['POST_result_2'][i]),
-            data['GET_monthBlog'][i],
-            data['GET_blogSaturation'][i],
-            data['GET_shopCategory'][i],
-            data['POST_result_3'][i],
-            data['POST_result_4'][i],
-            data['POST_result_5'][i],
-            data['POST_result_6'][i],
-            data['POST_result_7'][i],
-            data['POST_result_8'][i]
-            
-        ]
-        ws.append(row)
-
-
-    # 전체 셀에 대해 맑은 고딕 글꼴 적용
-    malgun_gothic_font = Font(name='맑은 고딕')
-
-    for row in ws.iter_rows():
-        for cell in row:
-            cell.font = malgun_gothic_font
-
-
-    # 정렬 설정 (병합된 셀도 고려)
-    for merged_range in ws.merged_cells.ranges:
-        min_col, min_row, max_col, max_row = merged_range.bounds
-        for row in range(min_row, max_row + 1):
-            for col in range(min_col, max_col + 1):
-                ws.cell(row=row, column=col).alignment = Alignment(horizontal='center', vertical='center')
-
-
-    # 각 열의 셀 정렬 설정
-    for row in range(1, len(data['Keyword']) + 4):  # 데이터가 있는 행까지
-        for col in [2, 3]:  # 2열과 3열에 대해서만
-            ws.cell(row=row, column=col).alignment = Alignment(horizontal='center', vertical='center')
-
-    # G열과 L열의 텍스트 가운데 정렬
-    for row in range(1, len(data['Keyword']) + 4):  # 데이터가 있는 행까지
-        for col in [7, 12]:  # G열(7)과 L열(12)
-            ws.cell(row=row, column=col).alignment = Alignment(horizontal='center', vertical='center')
-
-    # B~D열의 4열부터 유효 데이터가 있는 셀 우측 정렬 및 천 단위 구분 기호 추가
-    for row in range(4, len(data['Keyword']) + 4):  # 4열부터 시작
-        for col in range(2, 5):  # B열(2)부터 D열(4)까지
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value is not None:  # 유효 데이터가 있는 셀만
-                # 숫자형 데이터인지 확인
-                if isinstance(cell_value, (int, float)) or (isinstance(cell_value, str) and cell_value.isdigit() and int(cell_value) > 999):
-                    if isinstance(cell_value, str):
-                        cell_value = int(cell_value)  # 문자열을 정수로 변환
-                    ws.cell(row=row, column=col).value = f"{cell_value:,}"  # 천 단위 구분 기호 추가
-                ws.cell(row=row, column=col).alignment = Alignment(horizontal='right', vertical='center')
-
-    # E열과 F열 우측 정렬 추가
-    for row in range(4, len(data['Keyword']) + 4):  # 4열부터 시작
-        for col in range(5, 7):  # E열(5)과 F열(6)
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value is not None:  # 유효 데이터가 있는 셀만
-                ws.cell(row=row, column=col).alignment = Alignment(horizontal='right', vertical='center')
-
-
-    # H~K열과 M열의 4열부터 유효 데이터가 있는 셀 우측 정렬
-    for row in range(4, len(data['Keyword']) + 4):  # 4열부터 시작
-        for col in range(8, 12):  # H열(8)부터 K열(11)까지
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value is not None:  # 유효 데이터가 있는 셀만
-                ws.cell(row=row, column=col).alignment = Alignment(horizontal='right', vertical='center')
-        # M열(13)도 추가
-        cell_value = ws.cell(row=row, column=13).value
-        if cell_value is not None:  # 유효 데이터가 있는 셀만
-            ws.cell(row=row, column=13).alignment = Alignment(horizontal='right', vertical='center')
-
-    # 병합된 셀에서 \n 문자가 있는 경우 '자동 줄바꿈'과 '가운데 정렬' 설정
-    for merged_range in ws.merged_cells.ranges:
-        for row in ws[merged_range.coord]:
-            for cell in row:
-                cell_value = cell.value
-                if cell_value and isinstance(cell_value, str) and '\n' in cell_value:
-                    # 자동 줄바꿈 및 가운데 정렬 활성화
-                    cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-
-    # E~F, H~K 열의 3열 가운데 정렬 설정
-    for col in range(5, 7):  # E열(5)과 F열(6)
-        ws.cell(row=3, column=col).alignment = Alignment(horizontal='center', vertical='center')
-
-    for col in range(8, 12):  # H열(8)부터 K열(11)까지
-        ws.cell(row=3, column=col).alignment = Alignment(horizontal='center', vertical='center')
-
-
-    # 모든 열 너비 설정 (G열 제외)
-    for col_idx in range(1, ws.max_column + 1):  # 1부터 최대 열까지 반복
-        col_letter = get_column_letter(col_idx)  # 열 문자를 열 인덱스로부터 가져옴
-        if col_letter == 'G':
-            ws.column_dimensions[col_letter].width = 14  # G열 너비는 14로 설정
-        else:
-            ws.column_dimensions[col_letter].width = 9  # 나머지 열은 8로 설정
-
-
-
-
-    # 저장할 경로 설정
-    save_directory = os.path.join(PROJECT_PATH, "excel")
-    output_filename = f"더샘_브랜드검색_키워드쿼리_{datetime.now().strftime('%Y%m%d')}.xlsx"
-    output_path = os.path.join(save_directory, output_filename)
+    page.goto("https://www.ma-pia.net/keyword/keyword.php")
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").click()
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").fill("롬앤\n에뛰드\n클리오\n헤라\n페리페라\n에스쁘아\n투쿨포스쿨\n3CE\n릴리바이레드\n바닐라코\n퓌\n어뮤즈\n힌스\n하트퍼센트\n무지개맨션\n라카\n파넬\nVDL\n노베브\n삐아\n이니스프리\n컬러그램\n티핏\n루나\n루나컨실러\n루나컨실러팔레트\n루나롱래스팅팁컨실러\n웨이크메이크\n웨이크메이크컨실러\n데이지크\n데이지크컨실러\n데이지크컨실러팔레트\n정샘물\n정샘물컨실러\n정샘물컨실러팔레트\n티핏컨실러\n삐아컨실러\n글로우컨실러\n글로우낫드라이컨실러\n디어에이컨실러\n클리오컨실러\n바비브라운컨실러\n마루빌츠컨실러\n헤라컨실러\n더샘\n더샘컨실러\n더샘\n더샘컨실러\n더샘컨실러펜슬\n더샘팟컨실러\n더샘커버퍼펙션컨실러\n더샘커버퍼펙션팁컨실러\n더샘커버퍼펙션트리플팟컨실러\n더샘커버퍼펙션컨실러펜슬\n더샘커버퍼펙션컨실러쿠션\n더샘트리플팟컨실러\n더샘컨실러팔레트\n더샘파운데이션\n더샘컨실러쿠션\n더샘팁컨실러\n더샘립펜슬\n더샘쿠션\n더샘블러셔\n더샘젤리블러셔\n더샘코렉트베이지\n더샘코렉트업베이지\n더샘선크림\n더샘하이라이터\n더샘입덕주의화이트\n더샘클렌징워터\n더샘세일\n더샘파운데이션밤\n더샘섀도우\n더샘멜팅밤\n더샘프라이머립밤\n더샘입주화\n올리브영더샘\n더샘올리브영\n올리브영더샘컨실러\n올리브영다크서클컨실러\n더샘컨실러팟\n더샘다크서클컨실러\n더샘브라이트너\n더샘피치베이지\n더샘컨실러1.5\n더샘컨실러피치베이지\n더샘컨투어베이지\n더샘펜슬컨실러\n더샘트리플컨실러\n더샘마스크팩\n")
+    page.get_by_role("button", name="조회하기").click()
+    page.locator("div").filter(has_text="조회중입니다. 잠시만 기다려주세요").nth(1).click()
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").click()
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").fill("더샘커버퍼펙션립펜슬\n더샘코렉터\n더샘컨실커버쿠션\n더샘커버쿠션\n더샘컨실러파운데이션\n더샘새미스\n더샘틴트\n더샘에이드샷틴트\n더샘새미스시럽샷멜팅밤\n더샘립밤\n더샘핸드크림\n더샘컬러코렉터\n더샘커버퍼펙션트리플파운데이션밤\n더샘새미스에이드샷틴트\n더샘새미스멜팅밤\n더샘망고피치\n더샘아이라이너\n더샘하라케케\n더샘필링젤\n더샘핑크선크림\n더샘커버퍼펙션\n더샘립글로스\n더샘데저트샌드\n더샘립스틱\n더샘키스홀릭\n입덕주의화이트\n더샘골드볼륨라이트\n더샘샘물싱글섀도우\n더샘입덕주의\n더샘네이키드피치\n더샘오키드루머\n더샘리치캐모마일\n더샘바이올렛진\n더샘향수\n더샘이준호\n이준호더샘\n더샘준호\n더샘새미스시럽샷피치콧\n더샘새미스시럽샷멜팅밤\n더샘멜팅밤피치콧\n더샘피치콧\n더샘립밤\n더샘소프트블러링프라이머립밤\n더샘프라이머립\n더샘포토카드\n이준호포토카드\n이준호키링\n더샘키링\n더샘\n더샘컨실러\n더샘컨실러펜슬\n더샘팟컨실러\n더샘커버퍼펙션컨실러\n더샘커버퍼펙션팁컨실러\n더샘커버퍼펙션트리플팟컨실러\n더샘커버퍼펙션컨실러펜슬\n더샘커버퍼펙션컨실러쿠션\n더샘트리플팟컨실러\n더샘컨실러팔레트\n더샘컨실러쿠션\n더샘파운데이션\n더샘팁컨실러\n더샘립펜슬\n더샘쿠션\n더샘블러셔\n더샘젤리블러셔\n더샘코렉트베이지\n더샘코렉트업베이지\n더샘선크림\n더샘하이라이터\n입덕주의화이트\n더샘싱글섀도우\n더샘새미스에이드샷틴트\n더샘섀도우\n더샘브라이트너\n더샘새미스시럽샷멜팅밤\n더샘멜팅밤\n더샘프라이머립밤\n더샘맨즈케어\n올리브영더샘\n더샘올리브영\n올리브영더샘컨실러\n올리브영다크서클컨실러\n더샘컨실러팟\n더샘다크서클컨실러\n더샘피치베이지\n더샘컨실러1.5\n더샘컨실러피치베이지\n더샘컨투어베이지\n더샘펜슬컨실러\n")
+    page.get_by_role("button", name="조회하기").click()
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").click()
+    page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)").fill("더샘트리플컨실러\n더샘마스크팩\n더샘파운데이션밤\n더샘커버퍼펙션컨실러팔레트\n더샘커버퍼펙션립펜슬\n더샘코렉터\n더샘입덕주의화이트\n더샘클렌징워터\n더샘핑크선크림\n더샘커버쿠션\n더샘컨실쿠션\n더샘컨실커버쿠션\n더샘컨실러파운데이션\n더샘새미스\n더샘틴트\n더샘에이드샷틴트\n더샘립밤\n더샘핸드크림\n더샘세일\n더샘망고피치\n더샘아이라이너\n더샘하라케케\n더샘필링젤\n더샘할인\n더샘수분크림\n더샘더마플랜\n더샘립앤아이리무버\n더샘립글로스\n더샘데저트샌드\n더샘립스틱\n더샘키스홀릭\n더샘골드볼륨라이트\n더샘샘물싱글섀도우\n더샘네이키드피치\n더샘오키드루머\n더샘리치캐모마일\n더샘바이올렛진\n더샘향수\n더샘이준호\n이준호더샘\n더샘준호\n더샘캔디틴트\n더샘베이비라벤더\n더샘새미스시럽샷피치콧\n더샘멜팅밤피치콧\n더샘피치콧\n더샘커버퍼펙션\n더샘포토카드\n이준호포토카드\n이준호키링\n더샘키링\n더샘립밤\n더샘프라이머립\n더샘소프트블러링립밤\n더샘소프트블러링프라이머립밤\n")
     
-    wb.save(output_path)
+    # 입력 필드 클릭 및 값 입력
+    input_field = page.get_by_placeholder("한 줄에 하나씩 입력하세요.\r\n(최대100개까지)")
+    input_field.click()
+    print("입력 필드를 클릭했습니다.")
     
-    print(f"파일이 '{output_path}'로 저장되었습니다.")
+    # 조회 버튼 클릭
+    page.get_by_role("button", name="조회하기").click()
+    print("조회하기 버튼을 클릭했습니다.")
 
+    # 로딩 완료까지 대기
+    # wait_for_loading_to_complete(page)
+    
+    # 최대 10번 반복
+    max_attempts = 10
+    attempts = 0
+
+    # 다운로드 및 엑셀 폴더 경로
+    downloads_folder = os.path.join(PROJECT_PATH, "downloads")
+
+    # 다운로드 폴더 확인 및 생성
+    ensure_directory_exists(downloads_folder)
+
+    attempts = 0
+    max_attempts=30
+    interval=10
+    while attempts < max_attempts:
+        count = count_rows_in_table(page)  # 테이블의 레코드 수를 계산하는 함수
+        print(f'Table has {count} rows.')
+
+        # 200개가 넘으면 전체 체크 후 파일 다운로드
+        if count > 200:
+            # 전체 체크 후 파일 다운로드
+            check_all_rows(page)
+
+            # 다운로드 버튼 클릭
+            with page.expect_download() as download_info:
+                download_button = page.locator('xpath=/html/body/div[2]/section[1]/div[4]/div[1]/button[1]')
+                download_button.click()
+                print("다운로드 버튼을 클릭했습니다.")
+            download = download_info.value
+
+            # 다운로드된 파일 경로
+            downloaded_file_path = download.path()  # 다운로드된 파일의 경로
+            print(f"다운로드된 파일 경로: {downloaded_file_path}")
+
+            # 새 파일 이름 생성
+            new_file_name = f"더샘_브랜드검색_키워드쿼리_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            new_file_path = os.path.join(downloads_folder, new_file_name)
+
+            # 파일 이름 변경 및 이동
+            os.rename(downloaded_file_path, new_file_path)
+            print(f"파일 이름이 '{new_file_name}'으로 변경되어 '{downloads_folder}'로 이동되었습니다.")
+
+            # 저장할 경로 설정
+            save_directory = os.path.join(PROJECT_PATH, "excel")  # 엑셀 폴더 경로
+
+            # 디렉토리가 존재하지 않으면 생성
+            os.makedirs(save_directory, exist_ok=True)
+
+            # 파일 복사
+            copy_file_path = os.path.join(save_directory, new_file_name)
+            shutil.copy(new_file_path, copy_file_path)  # 파일 복사
+            print(f"파일이 '{save_directory}'로 복사되었습니다.")
+            break  # 다운로드가 완료되면 루프 종료
+        
+        # 200개가 안 되면 10초 대기 후 다시 호출
+        print(f"Not enough rows. Waiting for {interval} seconds...")
+        time.sleep(interval)
+        attempts += 1
+
+    if attempts == max_attempts:
+        print("최대 대기 시간 5분이 초과되었습니다. 다운로드를 수행할 수 없습니다.")
+
+def wait_for_loading_to_complete(page):
+    # 로딩 표시를 감지할 CSS 선택자 설정
+    loading_element = page.locator('div[style*="display: block"]')
+
+    # 로딩이 시작될 때까지 대기 (display: block)
+    print("로딩 시작을 기다리는 중...")
+    loading_element.wait_for(state="visible", timeout=30000)  # 최대 10초 대기
+    print("로딩 표시가 보였습니다.")
+
+    # 로딩이 끝나서 사라질 때까지 대기 (display: none)
+    loading_element.wait_for(state="hidden", timeout=30000)  # 최대 30초 대기
+    print("로딩이 완료되었습니다.")
+
+
+def check_all_rows(page):
+    # 전체 체크박스를 선택
+    checkbox = page.locator('xpath=/html/body/div[2]/section[1]/div[4]/div[2]/table/thead/tr[1]/th[1]/input')
+    try:
+        checkbox.wait_for(timeout=5000)  # 최대 5초 대기
+        checkbox.check()
+        print("전체 체크 박스를 클릭했습니다.")
+    except TimeoutError:
+        print("체크박스 클릭 실패. 재시도 중...")
+        time.sleep(2)
+        check_all_rows(page)
+
+def count_rows_in_table(page):
+    # XPath를 사용하여 tbody의 하위 tr 요소 선택
+    rows = page.locator('xpath=//*[@id="mytable2"]/tbody/tr')
+    
+    # tr 요소의 개수 반환
+    row_count = rows.count()
+    return row_count
 
 def ensure_directory_exists(directory):
     """주어진 디렉토리가 존재하지 않으면 생성합니다."""
@@ -604,40 +450,38 @@ def setup_browser(playwright: Playwright):
 
     return browser, context, page
 
+
 def run(playwright: Playwright) -> None:
     
-    # # 폴더 생성 및 파일 확인
-    # setup_directories(PROJECT_PATH)    
+    # 폴더 생성 및 파일 확인
+    setup_directories(PROJECT_PATH)    
     
-    # # 브라우저 설정 및 실행
-    # browser, context, page = setup_browser(playwright)
+    # 브라우저 설정 및 실행
+    browser, context, page = setup_browser(playwright)
     
-    # # 로그인
-    # cjoy_login(page)
+    # 로그인
+    cjoy_login(page)
 
-    # # 캠페인 리포트 다운로드 (당월)
-    # this_month_download_path = download_campaign_report(page, "thisMonth")
-    # save_csv_as_excel(this_month_download_path, "thisMonth")
+    # 캠페인 리포트 다운로드 (당월)
+    this_month_download_path = download_campaign_report(page, "thisMonth")
+    save_csv_as_excel(this_month_download_path, "thisMonth")
 
-    # # 캠페인 리포트 다운로드 (전월)
-    # last_month_download_path = download_campaign_report(page, "lastMonth")
-    # save_csv_as_excel(last_month_download_path, "lastMonth")
+    # 캠페인 리포트 다운로드 (전월)
+    last_month_download_path = download_campaign_report(page, "lastMonth")
+    save_csv_as_excel(last_month_download_path, "lastMonth")
 
-    # # 성과형 광고 캠페인 별 제품 효율 (당월)
-    # make_excel_for_performance_ad_campaign_product_efficiency(page)
+    # 성과형 광고 캠페인 별 제품 효율 (당월)
+    make_excel_for_performance_ad_campaign_product_efficiency(page)
 
-
-    # # -----------playwright 종료 ---------------
-    # context.close()
-    # browser.close()
-    
-    
     # 네이버 키워드 광고 엑셀(마피아닷컴)
-    generate_naver_keyword_excel()
+    generate_naver_keyword_excel(page)
     
+    # ---------------------
+    context.close()
+    browser.close()
 
     print("************* 이메일 발송 *************")
-    # excel 폴더 내 파일 이메일 전송
+    # 이메일 전송
     gmail.main()
 
 with sync_playwright() as playwright:
