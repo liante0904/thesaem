@@ -294,7 +294,7 @@ def generate_naver_keyword_excel(page):
         print(f'Table has {count} rows.')
 
         # 200개가 넘으면 전체 체크 후 파일 다운로드
-        if count > 200:
+        if count > 180:
             # 전체 체크 후 파일 다운로드
             check_all_rows(page)
 
