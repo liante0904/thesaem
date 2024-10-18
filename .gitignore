@@ -165,3 +165,4 @@ excel/*
 downloads/*
 send/*
 .python-version
+*.csv
