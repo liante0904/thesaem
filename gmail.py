@@ -96,6 +96,7 @@ def send_email(attachment_paths=None):
         print("이메일이 성공적으로 전송되었습니다.")
         print(f"발신자:{SENDER_EMAIL}")
         print(f"수신자:{RECEIVER_EMAIL}")
+        print(f"첨부파일정보:{attachment_paths}")
         print('='*30)
         # 연결 종료
         server.quit()
@@ -106,6 +107,7 @@ def send_email(attachment_paths=None):
         return False  # 오류 발생 시 False 반환
 
 def main():
+    print("************* 이메일 발송 *************")
     directory = os.path.join(PROJECT_PATH, "excel")
     
     result = ''
