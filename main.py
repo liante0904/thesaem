@@ -3,10 +3,9 @@ import os
 import shutil
 import pandas as pd
 import time
-import asyncio
 from pathlib import Path
 from datetime import datetime
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 from openpyxl.styles import Border, Side, Alignment
 from dotenv import load_dotenv
 
@@ -339,25 +338,24 @@ def run(playwright: Playwright) -> None:
     # 브라우저 설정 및 실행
     browser, context, page = setup_browser(playwright)
     
-    # # 로그인
-    # cjoy_login(page)
+    # 로그인
+    cjoy_login(page)
 
-    # # 캠페인 리포트 다운로드 (당월)
-    # this_month_download_path = download_campaign_report(page, "thisMonth")
-    # save_csv_as_excel(this_month_download_path, "thisMonth")
+    # 캠페인 리포트 다운로드 (당월)
+    this_month_download_path = download_campaign_report(page, "thisMonth")
+    save_csv_as_excel(this_month_download_path, "thisMonth")
 
-    # # 캠페인 리포트 다운로드 (전월)
-    # last_month_download_path = download_campaign_report(page, "lastMonth")
-    # save_csv_as_excel(last_month_download_path, "lastMonth")
+    # 캠페인 리포트 다운로드 (전월)
+    last_month_download_path = download_campaign_report(page, "lastMonth")
+    save_csv_as_excel(last_month_download_path, "lastMonth")
 
-    # # 성과형 광고 캠페인 별 제품 효율 (당월)
-    # make_excel_for_performance_ad_campaign_product_efficiency(page)
+    # 성과형 광고 캠페인 별 제품 효율 (당월)
+    make_excel_for_performance_ad_campaign_product_efficiency(page)
     
     # # ---------------------
     context.close()
     browser.close()
 
-    print("************* 이메일 발송 *************")
     # 이메일 전송
     gmail.main()
 

@@ -215,9 +215,9 @@ async def generate_naver_keyword_excel():
 
     output_path = os.path.join(save_directory, csv_file_name)
 
-    df.to_csv(csv_file_name, index=False, encoding="utf-8-sig")
+    df.to_csv(output_path, index=False, encoding="utf-8-sig")
 
-    print(f"데이터가 CSV 파일로 저장되었습니다: {csv_file_name}")
+    print(f"데이터가 CSV 파일로 저장되었습니다: {output_path}")
 
 if __name__ == "__main__":
     asyncio.run(generate_naver_keyword_excel())
