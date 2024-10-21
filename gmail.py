@@ -20,25 +20,29 @@ RECEIVER_EMAIL = os.getenv('RECEIVER_EMAIL')
 # 프로젝트 경로 가져오기
 PROJECT_PATH = os.getenv('PROJECT_PATH')
 
-def get_files_from_directory(directory, extension=None):
+def get_files_from_directory(directory, extensions=None):
     """
     특정 디렉토리에서 모든 파일을 가져오거나 특정 확장자의 파일만 가져옴.
     파일이 없는 경우 빈 리스트를 반환함.
-    
+
     :param directory: 검색할 디렉토리 경로
-    :param extension: 특정 파일 확장자 (예: '.txt'). None일 경우 모든 파일을 반환.
+    :param extensions: 특정 파일 확장자 또는 확장자 리스트 (예: '.txt' 또는 ['.txt', '.xlsx']). None일 경우 모든 파일을 반환.
     :return: 해당 디렉토리의 파일 경로 리스트. 파일이 없으면 빈 리스트.
     """
     files = []
-    
+
+    # extensions가 문자열이면 리스트로 변환
+    if isinstance(extensions, str):
+        extensions = [extensions]
+
     # 디렉토리 내 파일 목록 확인
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
-        
+
         # 파일이면서 확장자가 조건에 맞는 경우 리스트에 추가
-        if os.path.isfile(file_path) and (extension is None or file.endswith(extension)):
+        if os.path.isfile(file_path) and (extensions is None or any(file.endswith(ext) for ext in extensions)):
             files.append(file_path)
-    
+
     # 파일이 없는 경우 빈 리스트 반환
     return files
 
@@ -117,9 +121,9 @@ def main():
         os.makedirs(directory)
         print(f"{directory} 디렉토리가 생성되었습니다.")
         
-    # 디렉토리에서 모든 .xlsx 파일을 가져옴
-    attachment_paths = get_files_from_directory(directory, extension=".xlsx")
-    
+    # 확장자 리스트로 엑셀과 CSV 파일을 함께 가져옴
+    attachment_paths = get_files_from_directory(directory, extensions=[".xlsx", ".csv"])
+
     # send 디렉토리 경로 설정
     send_directory = os.path.join(PROJECT_PATH, "send")
     if not os.path.exists(send_directory):
@@ -128,8 +132,10 @@ def main():
     
     # 이메일 보내기
     if attachment_paths:
+        print('='*50)
         print('전송 대기 파일.')
-        print(attachment_paths)
+        for attachment_path in attachment_paths:
+            print(attachment_path)
         print('='*50)
         result = send_email(attachment_paths)
     else:
