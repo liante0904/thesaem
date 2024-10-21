@@ -132,8 +132,10 @@ def main():
     
     # 이메일 보내기
     if attachment_paths:
+        print('='*50)
         print('전송 대기 파일.')
-        print(attachment_paths)
+        for attachment_path in attachment_paths:
+            print(attachment_path)
         print('='*50)
         result = send_email(attachment_paths)
     else:
