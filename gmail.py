@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
@@ -102,13 +103,33 @@ def send_email(attachment_paths=None):
         print(f"수신자:{RECEIVER_EMAIL}")
         print(f"첨부파일정보:{attachment_paths}")
         print('='*30)
+        
+        # 결과 메시지 생성 및 쉘로 전송
+        result_message = f"이메일 전송 성공: 발신자={SENDER_EMAIL}, 수신자={RECEIVER_EMAIL}, 파일={attachment_paths}"
+        send_message_to_shell(result_message)
+
         # 연결 종료
         server.quit()
         return True  # 이메일 전송 성공 시 True 반환
 
     except Exception as e:
         print(f"이메일 전송 중 오류 발생: {e}")
+        
+        # 실패 메시지 생성 및 쉘로 전송
+        result_message = f"이메일 전송 실패: {e}"
+        send_message_to_shell(result_message)
         return False  # 오류 발생 시 False 반환
+
+def send_message_to_shell(result_message):
+    """
+    쉘 스크립트로 메시지를 전송하는 함수
+    :param result_message: 쉘로 보낼 메시지 내용
+    """
+    try:
+        subprocess.run(['/home/ubuntu/sh/sendmsg.sh', result_message], check=True)
+        print(f"메시지가 쉘 스크립트로 전송되었습니다: {result_message}")
+    except subprocess.CalledProcessError as e:
+        print(f"쉘 스크립트 실행 중 오류 발생: {e}")
 
 def main():
     print("************* 이메일 발송 *************")
