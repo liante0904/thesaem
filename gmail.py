@@ -101,7 +101,10 @@ def send_email(attachment_paths=None):
         print("이메일이 성공적으로 전송되었습니다.")
         print(f"발신자:{SENDER_EMAIL}")
         print(f"수신자:{RECEIVER_EMAIL}")
-        print(f"첨부파일정보:{attachment_paths}")
+        print('='*30)
+        print("================================첨부파일정보================================")
+        for attachment_path in attachment_paths:
+            print(attachment_path)
         print('='*30)
         
         # 결과 메시지 생성 및 쉘로 전송
