@@ -44,6 +44,10 @@ def get_files_from_directory(directory, extensions=None):
         if os.path.isfile(file_path) and (extensions is None or any(file.endswith(ext) for ext in extensions)):
             files.append(file_path)
 
+    if file:
+        # 파일명 기준으로 정렬
+        file = sorted(file, key=lambda x: x.split('/')[-1])
+        
     # 파일이 없는 경우 빈 리스트 반환
     return files
 
@@ -103,12 +107,36 @@ def send_email(attachment_paths=None):
         print(f"수신자:{RECEIVER_EMAIL}")
         print('='*30)
         print("================================첨부파일정보================================")
+ 
+        result_message = (
+            "=========이메일 전송 성공=========\n"
+            f"발신자={SENDER_EMAIL}\n"
+            f"수신자={RECEIVER_EMAIL}\n"
+            "=============================\n"
+        )
+
+        # 경로별로 파일을 저장할 딕셔너리 생성
+        path_dict = {}
+
+        # 파일 경로에서 경로와 파일명 분리
         for attachment_path in attachment_paths:
-            print(attachment_path)
-        print('='*30)
-        
-        # 결과 메시지 생성 및 쉘로 전송
-        result_message = f"이메일 전송 성공: 발신자={SENDER_EMAIL}, 수신자={RECEIVER_EMAIL}, 파일={attachment_paths}"
+            directory = '/'.join(attachment_path.split('/')[:-1])  # 디렉토리 경로 추출
+            filename = attachment_path.split('/')[-1]  # 파일명 추출
+
+            # 경로가 이미 딕셔너리에 있으면 파일명을 추가, 없으면 새 리스트 생성
+            if directory in path_dict:
+                path_dict[directory].append(filename)
+            else:
+                path_dict[directory] = [filename]
+
+        # 경로와 해당 경로의 파일명을 출력
+        for directory, filenames in path_dict.items():
+            result_message += f"첨부파일 경로: {directory}/\n\n"
+            for filename in filenames:
+                result_message += f"{filename}\n"
+            result_message += "\n"
+
+        result_message += "============================="
         send_message_to_shell(result_message)
 
         # 연결 종료
