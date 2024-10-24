@@ -4,9 +4,72 @@ import pandas as pd
 import asyncio
 import aiohttp
 import os
+import sys
 from datetime import datetime
 
 from dotenv import load_dotenv
+
+load_dotenv()
+
+PROJECT_PATH = os.getenv("PROJECT_PATH")
+        
+def setup_directories(project_path):
+    """
+    필요한 폴더들을 생성하고, 기준일자 폴더 내 파일을 확인합니다.
+    기준일자 폴더에 파일이 있으면 프로그램을 종료합니다.
+    
+    :param project_path: 프로젝트 경로
+    """
+    # 전송 폴더 및 기준일자 폴더 생성 및 파일 확인
+    send_directory = os.path.join(project_path, "send")
+    date_folder_name = datetime.now().strftime('%Y%m%d')
+    send_date_folder_path = os.path.join(send_directory, date_folder_name)
+
+    # 기준일자 폴더 확인 및 생성
+    ensure_directory_exists(send_date_folder_path)
+
+    # 기준일자 폴더에 이미 전송된 파일이 있는지 확인
+    send_files = get_files_from_directory(send_date_folder_path, extension=".csv")
+    if send_files:
+        print(f"{datetime.now().strftime('%Y%m%d')} 이미 {send_files} 이메일이 발송되어 종료합니다.")
+        sys.exit(0)
+
+    # 다운로드, 엑셀 폴더 경로 생성
+    downloads_folder = os.path.join(project_path, "downloads")
+    excel_folder = os.path.join(project_path, "excel")
+    send_folder = os.path.join(project_path, "send")
+
+    # 폴더들 확인 및 생성
+    ensure_directory_exists(downloads_folder)
+    ensure_directory_exists(excel_folder)
+    ensure_directory_exists(send_folder)
+def get_files_from_directory(directory, extension=None):
+    """
+    특정 디렉토리에서 모든 파일을 가져오거나 특정 확장자의 파일만 가져옴.
+    파일이 없는 경우 빈 리스트를 반환함.
+    
+    :param directory: 검색할 디렉토리 경로
+    :param extension: 특정 파일 확장자 (예: '.txt'). None일 경우 모든 파일을 반환.
+    :return: 해당 디렉토리의 파일 경로 리스트. 파일이 없으면 빈 리스트.
+    """
+    files = []
+    
+    # 디렉토리 내 파일 목록 확인
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
+        
+        # 파일이면서 확장자가 조건에 맞는 경우 리스트에 추가
+        if os.path.isfile(file_path) and (extension is None or file.endswith(extension)):
+            files.append(file_path)
+    
+    # 파일이 없는 경우 빈 리스트 반환
+    return files  
+   
+def ensure_directory_exists(directory):
+    """주어진 디렉토리가 존재하지 않으면 생성합니다."""
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"디렉토리 '{directory}'가 생성되었습니다.")
 
 
 async def generate_naver_keyword_excel():
@@ -97,7 +160,7 @@ async def generate_naver_keyword_excel():
                             continue
 
                         print(f"결과 분리: {result}")  # 결과 디버깅용 출력
-
+                        print(f"결과 분리 후... 총 {len(result)}개의 키워드 결과")
                         # POST 결과 추가
                         data["Keyword"].append(result[0])
                         data["POST_result_1"].append(result[1])
@@ -220,4 +283,6 @@ async def generate_naver_keyword_excel():
     print(f"데이터가 CSV 파일로 저장되었습니다: {output_path}")
 
 if __name__ == "__main__":
+    # 폴더 생성 및 파일 확인
+    setup_directories(PROJECT_PATH)  
     asyncio.run(generate_naver_keyword_excel())
