@@ -44,9 +44,9 @@ def get_files_from_directory(directory, extensions=None):
         if os.path.isfile(file_path) and (extensions is None or any(file.endswith(ext) for ext in extensions)):
             files.append(file_path)
 
-        if file:
+        if files:
             # 파일명 기준으로 정렬
-            file = sorted(file, key=lambda x: x.split('/')[-1])
+            files = sorted(files, key=lambda x: x.split('/')[-1])
         
     # 파일이 없는 경우 빈 리스트 반환
     return files
@@ -148,7 +148,7 @@ def send_email(attachment_paths=None):
         
         # 실패 메시지 생성 및 쉘로 전송
         result_message = f"이메일 전송 실패: {e}"
-        send_message_to_shell(result_message)
+        # send_message_to_shell(result_message)
         return False  # 오류 발생 시 False 반환
 
 def send_message_to_shell(result_message):
