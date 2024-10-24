@@ -44,9 +44,9 @@ def get_files_from_directory(directory, extensions=None):
         if os.path.isfile(file_path) and (extensions is None or any(file.endswith(ext) for ext in extensions)):
             files.append(file_path)
 
-    if file:
-        # 파일명 기준으로 정렬
-        file = sorted(file, key=lambda x: x.split('/')[-1])
+        if file:
+            # 파일명 기준으로 정렬
+            file = sorted(file, key=lambda x: x.split('/')[-1])
         
     # 파일이 없는 경우 빈 리스트 반환
     return files
