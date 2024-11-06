@@ -83,6 +83,7 @@ def download_campaign_report(page, period):
 
 def save_csv_as_excel(download_path, period):
     """CSV 파일을 엑셀 파일로 변환하고 저장하는 함수"""
+    print("########csv를 엑셀로 변환합니다########")
     try:
         # 이후 CSV 파일 처리
         df = pd.read_csv(download_path)
@@ -236,15 +237,40 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
 
         # 각 캠페인 이름에 해당하는 <div> 요소 클릭
         for campaign_name in active_campaign_names:
-            
             # 캠페인 요소를 찾기 위해 광고홈 이동
             print('캠페인 요소를 찾기 위해 광고홈 이동')
             page.get_by_role("link", name="광고 홈").click()
             page.get_by_test_id("adAccountDashboardTableContainer").get_by_role("combobox").select_option("50")
             time.sleep(1)
-            # 텍스트가 캠페인 이름인 div 요소를 클릭
-            # 클래스와 텍스트를 가진 div 요소를 클릭
-            page.locator(f"div.TruncatedText__SCTruncatedText-sc-1rhzpkt-0.gEUBDs.StyledComponents__TableTruncatedText-sc-hx33dd-12:has-text('{campaign_name}')").click()
+
+            # adAccountDashboardTable 컨테이너 내에서 캠페인 이름을 찾기 위해 반복 스크롤
+            found = False
+            
+            for _ in range(10):  # 최대 10회 스크롤 반복
+                print("adAccountDashboardTable 컨테이너 아래로 스크롤 중...")
+
+                # 컨테이너 직접 선택하고 스크롤
+                page.evaluate("document.querySelector('[data-testid=\"adAccountDashboardTable\"]').scrollBy(0, 500);")
+                time.sleep(1)  # 스크롤 후 대기
+
+                # 캠페인 이름이 포함된 요소 찾기 (첫 번째 요소 선택)
+                locator = page.locator(f"[data-testid='adAccountDashboardTable'] div:has-text('{campaign_name}')").nth(1)
+                
+                if locator.is_visible():
+                    locator.click()
+                    print(f"캠페인 '{campaign_name}'을(를) 클릭했습니다.")
+                    found = True
+                    break
+                else:
+                    print(f"캠페인 '{campaign_name}'을 찾지 못해 스크롤을 계속합니다.")
+
+            # 요소를 찾지 못한 경우 메시지 출력
+            if not found:
+                error_message = f"캠페인 '{campaign_name}'을 찾을 수 없습니다."
+                print(error_message)
+                send_message_to_shell(error_message)
+
+            # 캠페인 상품 리포트 다운로드 
             page.get_by_label("다운로드").click()
 
             # 비동기 컨텍스트 매니저 사용
@@ -254,13 +280,12 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
 
             # 다운로드 파일 경로 얻기 (await download.path() 사용)
             download_path = download.path()  # await 추가
-
+            print('#' * 50)
             print(f"캠페인[{campaign_name}] 다운로드한 csv 파일 경로: {download_path}")
+            print('#' * 50)
+            save_csv_as_excel(download_path, campaign_name)
     except Exception as e:
         send_message_to_shell(str(e))
-        
-    save_csv_as_excel(download_path, campaign_name)
-        
 
 def ensure_directory_exists(directory):
     """주어진 디렉토리가 존재하지 않으면 생성합니다."""

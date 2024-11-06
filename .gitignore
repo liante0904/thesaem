@@ -166,3 +166,4 @@ downloads/*
 send/*
 .python-version
 *.csv
+mapia_keywords_history.json
