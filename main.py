@@ -347,12 +347,7 @@ def setup_directories(project_path):
     ensure_directory_exists(send_folder)
 
 def setup_browser(playwright: Playwright):
-    """
-    Playwright 브라우저 설정을 처리합니다. 환경 변수에 따라 headless 모드를 설정합니다.
-    
-    :param playwright: Playwright 인스턴스
-    :return: 생성된 페이지 객체
-    """
+    """Playwright 브라우저 설정을 처리합니다."""
     env = os.getenv('ENV')
     print(f"현재 환경: {env}")
     
@@ -360,11 +355,22 @@ def setup_browser(playwright: Playwright):
     if env == 'production':
         headless = True
 
-    browser = playwright.chromium.launch(headless=headless)
-    context = browser.new_context(locale="ko-KR")
+    # 사용자 데이터 디렉토리를 명시적으로 지정
+    user_data_dir = os.path.join(PROJECT_PATH, "playwright_cache")
+    
+    # 캐시 비활성화 및 사용자 데이터 디렉토리 설정
+    browser = playwright.chromium.launch(
+        headless=headless,
+        args=["--disable-cache"],
+        user_data_dir=user_data_dir
+    )
+    context = browser.new_context(
+        locale="ko-KR", bypass_csp=True, ignore_https_errors=True
+    )
     page = context.new_page()
 
     return browser, context, page
+
 
 
 def run(playwright: Playwright) -> None:
