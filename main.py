@@ -359,17 +359,26 @@ def setup_browser(playwright: Playwright):
     user_data_dir = os.path.join(PROJECT_PATH, "playwright_cache")
     
     # 캐시 비활성화 및 사용자 데이터 디렉토리 설정
-    browser = playwright.chromium.launch(
-        headless=headless,
-        args=["--disable-cache"],
-        user_data_dir=user_data_dir
-    )
-    context = browser.new_context(
-        locale="ko-KR", bypass_csp=True, ignore_https_errors=True
+    # browser = playwright.chromium.launch(
+    #     headless=headless,
+    #     args=["--disable-cache"],
+    #     user_data_dir=user_data_dir
+    # )
+    # context = browser.new_context(
+    #     locale="ko-KR", bypass_csp=True, ignore_https_errors=True
+    # )
+    # 캐시 비활성화 및 사용자 데이터 디렉토리 설정
+    context = playwright.chromium.launch_persistent_context(
+        user_data_dir=user_data_dir,  # 사용자 데이터 디렉토리 설정
+        headless=headless,            # headless 모드 설정
+        args=["--disable-cache"],     # 캐시 비활성화
+        locale="ko-KR",               # 로케일 설정
+        bypass_csp=True,              # CSP 무시
+        ignore_https_errors=True      # HTTPS 인증서 오류 무시
     )
     page = context.new_page()
 
-    return browser, context, page
+    return context, page
 
 
 
@@ -379,7 +388,7 @@ def run(playwright: Playwright) -> None:
         setup_directories(PROJECT_PATH)    
         
         # 브라우저 설정 및 실행
-        browser, context, page = setup_browser(playwright)
+        context, page = setup_browser(playwright)
         
         # 로그인
         cjoy_login(page)
@@ -397,7 +406,6 @@ def run(playwright: Playwright) -> None:
         
         # # ---------------------
         context.close()
-        browser.close()
 
         # 이메일 전송
         gmail.main()
