@@ -23,7 +23,8 @@ def cjoy_login(page):
         email = os.getenv("EMAIL")
         password = os.getenv("PASSWORD")
 
-        page.goto(site_url)
+        # page.goto(site_url)
+        page.goto(site_url, wait_until="domcontentloaded", timeout=60000)
         page.get_by_test_id("email").click()
         page.get_by_test_id("email").fill(email)
         page.get_by_test_id("password").click()
@@ -37,6 +38,7 @@ def download_campaign_report(page, period):
     
     print(f"*************캠페인 리포트 다운로드 ({period})*************")
     try:
+        page.wait_for_load_state("domcontentloaded", timeout=60000)
         page.get_by_test_id("homeDateRangePickerReference").click()
         
         if period == "thisMonth":
@@ -234,7 +236,9 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
         print(f"{state} 상태인 캠페인")
         print(active_campaign_names)
         print('#' * 50)
-
+        if not active_campaign_names:
+            print(f"{state} 상태인 캠페인이 없습니다.")
+            return
         # 각 캠페인 이름에 해당하는 <div> 요소 클릭
         for campaign_name in active_campaign_names:
             # 캠페인 요소를 찾기 위해 광고홈 이동
