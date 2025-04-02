@@ -167,3 +167,5 @@ send/*
 .python-version
 *.csv
 mapia_keywords_history.json
+playwright_cache/
+state.json

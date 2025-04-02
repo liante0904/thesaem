@@ -47,7 +47,7 @@ def download_campaign_report(page, period):
             page.get_by_test_id("lastMonth").click()
         
         page.get_by_test_id("homeDateRangePickerDialogApply").click()
-        page.get_by_label("다운로드").click()
+        # page.get_by_label("다운로드").click()
 
         # 파일 다운로드
         with page.expect_download() as download_info:
@@ -60,7 +60,7 @@ def download_campaign_report(page, period):
 
         # 프로젝트 다운로드 경로
         PROJECT_DOWNLOADS_PATH = os.path.join(PROJECT_PATH, "downloads")
-
+        target_download_path = ''
         # .csv 파일 경로 설정
         if not str(download_path).endswith('.csv'):
             new_download_path = download_path.with_suffix('.csv')  # .csv 확장자 추가
