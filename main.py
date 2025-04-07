@@ -274,8 +274,8 @@ def make_excel_for_performance_ad_campaign_product_efficiency(page):
                 print(error_message)
                 send_message_to_shell(error_message)
 
-            # 캠페인 상품 리포트 다운로드 
-            # page.get_by_label("다운로드").click()
+            # 캠페인 상품 리포트 다운로드을 위해 '상품'탭 클릭
+            page.get_by_label("item").click()
 
             # 비동기 컨텍스트 매니저 사용
             with page.expect_download() as download_info:
